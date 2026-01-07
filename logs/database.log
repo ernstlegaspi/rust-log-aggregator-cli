@@ -1,0 +1,18 @@
+2025-01-07 11:00:05 INFO Database connection pool initialized: 10 connections
+2025-01-07 11:00:23 INFO Query executed: SELECT * FROM users WHERE id=1001 - 12ms
+2025-01-07 11:01:45 ERROR Deadlock detected: transaction rolled back
+2025-01-07 11:02:01 WARN Query timeout: SELECT * FROM orders JOIN products - 30s
+2025-01-07 11:02:34 ERROR Connection failed: too many connections
+2025-01-07 11:02:35 ERROR Connection failed: too many connections
+2025-01-07 11:02:36 ERROR Connection failed: too many connections
+2025-01-07 11:03:12 INFO Connection pool resized to 20 connections
+2025-01-07 11:03:45 ERROR Constraint violation: duplicate key value violates unique constraint
+2025-01-07 11:04:23 WARN Slow query detected: UPDATE users SET last_login=NOW() - 5.6s
+2025-01-07 11:05:01 ERROR Disk full: cannot write to transaction log
+2025-01-07 11:05:02 ERROR Disk full: cannot write to transaction log
+2025-01-07 11:05:15 INFO Emergency shutdown initiated
+2025-01-07 11:06:34 INFO Database restarted successfully
+2025-01-07 11:07:12 INFO Query executed: INSERT INTO audit_log VALUES(...) - 8ms
+2025-01-07 11:07:56 ERROR Foreign key constraint violation: referenced record not found
+2025-01-07 11:08:23 WARN Index scan inefficient: consider rebuilding index on users.email
+2025-01-07 11:09:01 INFO Backup started: full database backup

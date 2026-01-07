@@ -1,0 +1,14 @@
+2025-01-07 09:30:01 INFO GET /api/users/123 - 200 OK - 45ms
+2025-01-07 09:30:15 INFO POST /api/orders - 201 Created - 123ms
+2025-01-07 09:30:28 ERROR POST /api/payments - 500 Internal Server Error - 5ms
+2025-01-07 09:30:45 INFO GET /api/products?page=1 - 200 OK - 67ms
+2025-01-07 09:31:02 WARN GET /api/users/999 - 404 Not Found - 12ms
+2025-01-07 09:31:19 INFO DELETE /api/orders/456 - 204 No Content - 34ms
+2025-01-07 09:31:34 ERROR POST /api/users - 400 Bad Request: missing email field - 8ms
+2025-01-07 09:31:56 INFO GET /api/health - 200 OK - 3ms
+2025-01-07 09:32:11 ERROR PUT /api/products/789 - 503 Service Unavailable - 1ms
+2025-01-07 09:32:29 INFO GET /api/orders/456 - 200 OK - 56ms
+2025-01-07 09:32:47 WARN POST /api/login - 429 Too Many Requests - 5ms
+2025-01-07 09:33:05 INFO POST /api/logout - 200 OK - 23ms
+2025-01-07 09:33:22 ERROR GET /api/reports/monthly - 500 Internal Server Error - 2ms
+2025-01-07 09:33:41 INFO GET /api/dashboard - 200 OK - 89ms

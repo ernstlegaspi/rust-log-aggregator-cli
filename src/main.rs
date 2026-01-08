@@ -1,6 +1,7 @@
 use clap::Parser;
 
 use std::{
+    collections::HashMap,
     fs::File,
     io::{BufReader, Read},
     path::PathBuf,
@@ -25,32 +26,48 @@ use std::{
 // Multi-file processing - Handle multiple log files simultaneously using threads
 
 #[derive(Parser)]
-#[command(name = "la")]
+#[command(name = "log-agg")]
 #[command(about = "A Log Aggregator CLI", long_about = None)]
 struct CLI {
-    #[arg(short, long, required = true, value_name = "FILE", num_args = 1..5)]
+    #[arg(short, long, required = true, value_name = "FILE", num_args = 1..6)]
     files: Vec<PathBuf>,
 
     #[arg(short = 'p', long, value_name = "FILTER")]
     filter: Option<String>,
 
+    // output = json html txt
     #[arg(short, long, value_name = "OUTPUT")]
     output: Option<String>,
+
+    #[command(subcommand)]
+    actions: Option<Actions>,
 }
+
+#[derive(Parser)]
+enum Actions {
+    /// Manage configuration settings (config --help)
+    Config {
+        /// Print log
+        #[arg(long)]
+        print: bool,
+    },
+}
+
+// add feature if user wants to print the log
 
 fn main() {
     let cli = CLI::parse();
 
     let mut handles = vec![];
 
+    let aggregate_count = Arc::new(Mutex::new(HashMap::<String, usize>::new()));
     let contents = Arc::new(Mutex::new(String::new()));
-    let entry_count = Arc::new(Mutex::new(0));
     let filter = Arc::new(cli.filter);
 
-    for path in cli.files {
+    for path in cli.files.clone() {
         let contents = Arc::clone(&contents);
-        let entry_count = Arc::clone(&entry_count);
         let filter = Arc::clone(&filter);
+        let aggregate_count = Arc::clone(&aggregate_count);
 
         let handle = thread::spawn(move || {
             let path = PathBuf::from("logs").join(path);
@@ -81,6 +98,31 @@ fn main() {
                 return;
             }
 
+            {
+                let mut guard = aggregate_count.lock().unwrap();
+
+                for contents in file_contents.lines() {
+                    let c = contents.to_lowercase();
+
+                    if c.contains("error") || c.contains("err") {
+                        guard
+                            .entry("Errors".to_string())
+                            .and_modify(|d| *d += 1)
+                            .or_insert(1);
+                    } else if c.contains("warn") || c.contains("warning") {
+                        guard
+                            .entry("Warnings".to_string())
+                            .and_modify(|d| *d += 1)
+                            .or_insert(1);
+                    } else if c.contains("info") {
+                        guard
+                            .entry("Info".to_string())
+                            .and_modify(|d| *d += 1)
+                            .or_insert(1);
+                    }
+                }
+            }
+
             let file_contents: String = match filter.as_ref() {
                 Some(v) => {
                     let contents: String = file_contents
@@ -99,11 +141,6 @@ fn main() {
                 None => file_contents,
             };
 
-            {
-                let mut counter = entry_count.lock().unwrap();
-                *counter += file_contents.lines().count();
-            }
-
             let mut contents = contents.lock().unwrap();
             contents.push_str(&file_contents);
         });
@@ -115,9 +152,38 @@ fn main() {
         handle.join().unwrap();
     }
 
-    let entry_count = entry_count.lock().unwrap();
-    println!("Total entries: {}", entry_count);
+    println!();
 
-    let contents = contents.lock().unwrap();
-    print!("{contents}");
+    {
+        let aggregate_count = aggregate_count.lock().unwrap();
+        for (k, v) in &*aggregate_count {
+            println!("{k}: {}", v);
+        }
+    }
+
+    println!();
+
+    if let Some(v) = cli.actions {
+        match v {
+            Actions::Config { print } => {
+                if print {
+                    let contents = contents.lock().unwrap();
+                    println!("{contents}");
+                }
+            }
+        }
+    }
+
+    print!("Files processed: ");
+    for (i, e) in cli.files.iter().enumerate() {
+        if let Some(v) = e.file_name() {
+            print!("{:?}", v);
+        }
+
+        if i != cli.files.len() - 1 {
+            print!(", ");
+        }
+    }
+
+    println!();
 }

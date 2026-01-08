@@ -1,0 +1,20 @@
+2025-01-07 14:00:12 INFO [nginx] Server listening on 0.0.0.0:80
+2025-01-07 14:00:34 INFO [nginx] 192.168.1.45 - GET / HTTP/1.1 200 1.2kb 15ms
+2025-01-07 14:01:02 INFO [nginx] 192.168.1.67 - GET /assets/style.css HTTP/1.1 200 45kb 8ms
+2025-01-07 14:01:23 WARN [nginx] 192.168.1.45 - GET /admin HTTP/1.1 401 0.5kb 3ms
+2025-01-07 14:01:45 INFO [nginx] 192.168.1.89 - POST /api/login HTTP/1.1 200 0.3kb 234ms
+2025-01-07 14:02:11 ERROR [nginx] 192.168.1.102 - GET /missing-page HTTP/1.1 404 1kb 2ms
+2025-01-07 14:02:34 INFO [nginx] 192.168.1.45 - GET /dashboard HTTP/1.1 200 12kb 45ms
+2025-01-07 14:03:01 ERROR [nginx] Upstream connection timeout: backend server not responding
+2025-01-07 14:03:02 ERROR [nginx] 192.168.1.67 - GET /api/data HTTP/1.1 504 0.8kb 30000ms
+2025-01-07 14:03:29 WARN [nginx] Rate limit exceeded for IP 192.168.1.156
+2025-01-07 14:03:30 WARN [nginx] Rate limit exceeded for IP 192.168.1.156
+2025-01-07 14:03:31 WARN [nginx] Rate limit exceeded for IP 192.168.1.156
+2025-01-07 14:04:15 INFO [nginx] SSL certificate renewed successfully
+2025-01-07 14:04:47 INFO [nginx] 192.168.1.89 - POST /api/upload HTTP/1.1 201 0.2kb 1567ms
+2025-01-07 14:05:23 ERROR [nginx] Worker process died unexpectedly, respawning
+2025-01-07 14:05:24 INFO [nginx] Worker process started: pid=12847
+2025-01-07 14:06:01 INFO [nginx] 192.168.1.201 - GET /health HTTP/1.1 200 0.1kb 1ms
+2025-01-07 14:06:34 WARN [nginx] High memory usage detected: 1.2GB/2GB
+2025-01-07 14:07:12 ERROR [nginx] Failed to write access log: disk write error
+2025-01-07 14:07:45 INFO [nginx] 192.168.1.45 - GET /logout HTTP/1.1 302 0.1kb 5ms

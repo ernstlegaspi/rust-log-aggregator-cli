@@ -1,0 +1,24 @@
+2025-01-07 15:30:01 INFO [docker] Container webapp_1 starting
+2025-01-07 15:30:05 INFO [docker] Container webapp_1 started successfully (id: a3f7c9d2e1b4)
+2025-01-07 15:30:23 INFO [docker] Container redis_1 health check: healthy
+2025-01-07 15:30:45 WARN [docker] Container postgres_1 memory usage at 87%
+2025-01-07 15:31:12 INFO [docker] Image pulled: nginx:latest (size: 142MB)
+2025-01-07 15:31:34 ERROR [docker] Container worker_3 exited with code 1
+2025-01-07 15:31:35 INFO [docker] Container worker_3 restarting (attempt 1/3)
+2025-01-07 15:31:42 INFO [docker] Container worker_3 started successfully (id: b8e2f1a9c5d7)
+2025-01-07 15:32:01 INFO [docker] Volume backup_data mounted to /var/backups
+2025-01-07 15:32:23 ERROR [docker] Failed to start container api_2: port 8080 already in use
+2025-01-07 15:32:56 WARN [docker] Container webapp_1 CPU usage at 92%
+2025-01-07 15:33:15 INFO [docker] Network bridge_network created (subnet: 172.18.0.0/16)
+2025-01-07 15:33:34 ERROR [docker] Container postgres_1 health check failed: connection refused
+2025-01-07 15:33:35 ERROR [docker] Container postgres_1 marked as unhealthy
+2025-01-07 15:33:50 INFO [docker] Container postgres_1 stopped
+2025-01-07 15:33:52 INFO [docker] Container postgres_1 starting
+2025-01-07 15:33:58 INFO [docker] Container postgres_1 started successfully (id: c9d4e2a7f3b1)
+2025-01-07 15:34:23 WARN [docker] Disk usage at 78% on /var/lib/docker
+2025-01-07 15:34:45 INFO [docker] Pruned unused images: freed 2.3GB
+2025-01-07 15:35:12 ERROR [docker] Container worker_3 exited with code 137 (OOM killed)
+2025-01-07 15:35:13 WARN [docker] Container worker_3 restarting (attempt 2/3)
+2025-01-07 15:35:20 INFO [docker] Container worker_3 started with increased memory limit: 1GB
+2025-01-07 15:35:45 INFO [docker] Container redis_1 backup completed: dump.rdb saved
+2025-01-07 15:36:12 INFO [docker] All containers healthy: 6/6 running

@@ -2,11 +2,13 @@ use clap::Parser;
 
 use std::{
     collections::HashMap,
+    fmt::{Display, Formatter, Result},
     fs::File,
     io::{BufReader, Read},
     path::PathBuf,
     sync::{Arc, Mutex},
     thread,
+    time::Instant,
 };
 
 // Total entries: 45
@@ -32,37 +34,43 @@ struct CLI {
     #[arg(short, long, required = true, value_name = "FILE", num_args = 1..6)]
     files: Vec<PathBuf>,
 
-    #[arg(short = 'p', long, value_name = "FILTER")]
+    #[arg(long, value_name = "FILTER")]
     filter: Option<String>,
 
     // output = json html txt
     #[arg(short, long, value_name = "OUTPUT")]
     output: Option<String>,
 
-    #[command(subcommand)]
-    actions: Option<Actions>,
+    #[arg(short = 'p', long)]
+    print: bool,
 }
 
-#[derive(Parser)]
-enum Actions {
-    /// Manage configuration settings (config --help)
-    Config {
-        /// Print log
-        #[arg(long)]
-        print: bool,
-    },
+#[derive(Eq, Hash, PartialEq)]
+enum LogLevel {
+    Error,
+    Info,
+    Warning,
 }
 
-// add feature if user wants to print the log
+impl Display for LogLevel {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        match self {
+            LogLevel::Error => write!(f, "Errors"),
+            LogLevel::Warning => write!(f, "Warnings"),
+            LogLevel::Info => write!(f, "Info"),
+        }
+    }
+}
 
 fn main() {
+    let start = Instant::now();
     let cli = CLI::parse();
 
     let mut handles = vec![];
 
-    let aggregate_count = Arc::new(Mutex::new(HashMap::<String, usize>::new()));
-    let contents = Arc::new(Mutex::new(String::new()));
-    let filter = Arc::new(cli.filter);
+    let aggregate_count = Arc::new(Mutex::new(HashMap::<LogLevel, usize>::new()));
+    let contents = Arc::new(Mutex::new(Vec::<String>::new()));
+    let filter = Arc::new(cli.filter.as_ref().map(|v| v.to_lowercase()));
 
     for path in cli.files.clone() {
         let contents = Arc::clone(&contents);
@@ -73,12 +81,12 @@ fn main() {
             let path = PathBuf::from("logs").join(path);
 
             if !path.exists() {
-                println!("{:?} does not exist.", path);
+                eprintln!("Error: File does not exist {:?}", path);
                 return;
             }
 
             if !path.is_file() {
-                println!("{:?} is not a file", path);
+                eprintln!("Error: is not a file {:?}", path);
                 return;
             }
 
@@ -98,51 +106,43 @@ fn main() {
                 return;
             }
 
-            {
-                let mut guard = aggregate_count.lock().unwrap();
+            let mut local_count = HashMap::<LogLevel, usize>::new();
+            let mut filtered_contents = Vec::<&str>::new();
 
-                for contents in file_contents.lines() {
-                    let c = contents.to_lowercase();
+            for line in file_contents.lines() {
+                let content = line.to_lowercase();
 
-                    if c.contains("error") || c.contains("err") {
-                        guard
-                            .entry("Errors".to_string())
-                            .and_modify(|d| *d += 1)
-                            .or_insert(1);
-                    } else if c.contains("warn") || c.contains("warning") {
-                        guard
-                            .entry("Warnings".to_string())
-                            .and_modify(|d| *d += 1)
-                            .or_insert(1);
-                    } else if c.contains("info") {
-                        guard
-                            .entry("Info".to_string())
-                            .and_modify(|d| *d += 1)
-                            .or_insert(1);
+                if content.contains("error") || content.contains("err") {
+                    *local_count.entry(LogLevel::Error).or_insert(0) += 1;
+                } else if content.contains("warn") || content.contains("warning") {
+                    *local_count.entry(LogLevel::Warning).or_insert(0) += 1;
+                } else if content.contains("info") {
+                    *local_count.entry(LogLevel::Info).or_insert(0) += 1;
+                }
+
+                match filter.as_ref() {
+                    Some(v) => {
+                        if content.contains(v) {
+                            filtered_contents.push(line);
+                        }
+                    }
+                    None => {
+                        filtered_contents.push(line);
                     }
                 }
             }
 
-            let file_contents: String = match filter.as_ref() {
-                Some(v) => {
-                    let contents: String = file_contents
-                        .lines()
-                        .filter(|c| c.to_lowercase().contains(v.as_str()))
-                        .map(|c| {
-                            let mut content = c.to_string();
-                            content.push('\n');
-
-                            content
-                        })
-                        .collect();
-
-                    contents
+            {
+                let mut guard = aggregate_count.lock().unwrap();
+                for (k, v) in local_count {
+                    guard.entry(k).and_modify(|d| *d += v).or_insert(v);
                 }
-                None => file_contents,
-            };
+            }
 
-            let mut contents = contents.lock().unwrap();
-            contents.push_str(&file_contents);
+            {
+                let mut contents = contents.lock().unwrap();
+                contents.push(filtered_contents.join(""));
+            }
         });
 
         handles.push(handle);
@@ -161,16 +161,12 @@ fn main() {
         }
     }
 
-    println!();
+    println!("\nTop errors:");
 
-    if let Some(v) = cli.actions {
-        match v {
-            Actions::Config { print } => {
-                if print {
-                    let contents = contents.lock().unwrap();
-                    println!("{contents}");
-                }
-            }
+    {
+        if cli.print {
+            let contents = contents.lock().unwrap();
+            println!("{}", contents.join(""));
         }
     }
 
@@ -185,5 +181,6 @@ fn main() {
         }
     }
 
-    println!();
+    let duration = start.elapsed();
+    println!("\nLooped through the data in {:?}", duration);
 }

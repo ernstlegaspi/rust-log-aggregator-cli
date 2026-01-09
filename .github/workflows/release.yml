@@ -3,66 +3,85 @@ name: Release
 on:
   push:
     tags:
-      - 'v*.*.*'  # Triggers on tags like v1.0.0, v1.2.3, etc.
+      - "v*.*.*"
+
+permissions:
+  contents: write
 
 jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          draft: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   build:
-    name: Build ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    name: Build ${{ matrix.platform.os_name }}
+    runs-on: ${{ matrix.platform.os }}
+    needs: create-release
     strategy:
+      fail-fast: false
       matrix:
-        include:
+        platform:
           - os: ubuntu-latest
+            os_name: Linux
             target: x86_64-unknown-linux-gnu
-            artifact_name: log-agg
-            asset_name: log-agg-linux-x86_64
+            bin: log-agg
+            name: log-agg-Linux-x86_64.tar.gz
+
           - os: windows-latest
+            os_name: Windows
             target: x86_64-pc-windows-msvc
-            artifact_name: log-agg.exe
-            asset_name: log-agg-windows-x86_64.exe
+            bin: log-agg.exe
+            name: log-agg-Windows-x86_64.zip
+
           - os: macos-latest
+            os_name: macOS-x86_64
             target: x86_64-apple-darwin
-            artifact_name: log-agg
-            asset_name: log-agg-macos-x86_64
+            bin: log-agg
+            name: log-agg-Darwin-x86_64.tar.gz
+
           - os: macos-latest
+            os_name: macOS-aarch64
             target: aarch64-apple-darwin
-            artifact_name: log-agg
-            asset_name: log-agg-macos-aarch64
+            bin: log-agg
+            name: log-agg-Darwin-aarch64.tar.gz
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.target }}
+          targets: ${{ matrix.platform.target }}
 
-      - name: Build
-        run: cargo build --release --target ${{ matrix.target }}
+      - name: Build binary
+        run: cargo build --release --locked --target ${{ matrix.platform.target }}
 
-      - name: Upload binaries to release
-        uses: svenstaro/upload-release-action@v2
+      - name: Package as archive (Unix)
+        if: matrix.platform.os != 'windows-latest'
+        run: |
+          cd target/${{ matrix.platform.target }}/release
+          tar czvf ../../../${{ matrix.platform.name }} ${{ matrix.platform.bin }}
+          cd -
+
+      - name: Package as archive (Windows)
+        if: matrix.platform.os == 'windows-latest'
+        run: |
+          cd target/${{ matrix.platform.target }}/release
+          7z a ../../../${{ matrix.platform.name }} ${{ matrix.platform.bin }}
+          cd -
+
+      - name: Upload release asset
+        uses: softprops/action-gh-release@v1
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: target/${{ matrix.target }}/release/${{ matrix.artifact_name }}
-          asset_name: ${{ matrix.asset_name }}
-          tag: ${{ github.ref }}
-          overwrite: true
-
-  create-release:
-    name: Create Release
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Create Release
-        uses: ncipollo/release-action@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ github.ref_name }}
-          name: Release ${{ github.ref_name }}
-          draft: false
-          prerelease: false
+          files: ${{ matrix.platform.name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -37,10 +37,6 @@ struct CLI {
     #[arg(long, value_name = "FILTER")]
     filter: Option<String>,
 
-    // output = json html txt
-    #[arg(short, long, value_name = "OUTPUT")]
-    output: Option<String>,
-
     #[arg(short = 'p', long)]
     print: bool,
 }
@@ -71,11 +67,13 @@ fn main() {
     let aggregate_count = Arc::new(Mutex::new(HashMap::<LogLevel, usize>::new()));
     let contents = Arc::new(Mutex::new(Vec::<String>::new()));
     let filter = Arc::new(cli.filter.as_ref().map(|v| v.to_lowercase()));
+    let top_errors = Arc::new(Mutex::new(HashMap::<String, usize>::new()));
 
     for path in cli.files.clone() {
         let contents = Arc::clone(&contents);
         let filter = Arc::clone(&filter);
         let aggregate_count = Arc::clone(&aggregate_count);
+        let top_errors = Arc::clone(&top_errors);
 
         let handle = thread::spawn(move || {
             let path = PathBuf::from("logs").join(path);
@@ -106,14 +104,22 @@ fn main() {
                 return;
             }
 
-            let mut local_count = HashMap::<LogLevel, usize>::new();
             let mut filtered_contents = Vec::<&str>::new();
+            let mut local_count = HashMap::<LogLevel, usize>::new();
+            let mut errors_collection = HashMap::<String, usize>::new();
 
             for line in file_contents.lines() {
                 let content = line.to_lowercase();
 
-                if content.contains("error") || content.contains("err") {
+                if content.contains("error") {
                     *local_count.entry(LogLevel::Error).or_insert(0) += 1;
+
+                    if let Some((_, after_error)) = content.split_once("error") {
+                        let error_msg = after_error.trim_start_matches(&[' ', ':', '-'][..]).trim();
+                        if !error_msg.is_empty() {
+                            *errors_collection.entry(error_msg.to_string()).or_insert(0) += 1;
+                        }
+                    }
                 } else if content.contains("warn") || content.contains("warning") {
                     *local_count.entry(LogLevel::Warning).or_insert(0) += 1;
                 } else if content.contains("info") {
@@ -141,7 +147,14 @@ fn main() {
 
             {
                 let mut contents = contents.lock().unwrap();
-                contents.push(filtered_contents.join(""));
+                contents.push(filtered_contents.join("\n"));
+            }
+
+            {
+                let mut top_errors = top_errors.lock().unwrap();
+                for (k, v) in errors_collection {
+                    top_errors.entry(k).and_modify(|d| *d += v).or_insert(v);
+                }
             }
         });
 
@@ -162,11 +175,29 @@ fn main() {
     }
 
     println!("\nTop errors:");
+    {
+        let top_errors = top_errors.lock().unwrap();
+        let mut sorted_errors: Vec<_> = top_errors
+            .iter()
+            .filter(|v| {
+                let (_, v) = *v;
+                *v > 1
+            })
+            .map(|v| v)
+            .collect();
+        sorted_errors.sort_unstable_by(|a, b| b.1.cmp(a.1));
+
+        for (k, v) in sorted_errors {
+            println!("- \"{k}\" ({v} occurences)");
+        }
+    }
+
+    println!();
 
     {
         if cli.print {
             let contents = contents.lock().unwrap();
-            println!("{}", contents.join(""));
+            println!("{}", contents.join("\n"));
         }
     }
 

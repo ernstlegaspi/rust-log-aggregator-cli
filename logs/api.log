@@ -12,3 +12,4 @@
 2025-01-07 09:33:05 INFO POST /api/logout - 200 OK - 23ms
 2025-01-07 09:33:22 ERROR GET /api/reports/monthly - 500 Internal Server Error - 2ms
 2025-01-07 09:33:41 INFO GET /api/dashboard - 200 OK - 89ms
+2025-01-07 11:02:36 ERROR Connection failed: too many connections

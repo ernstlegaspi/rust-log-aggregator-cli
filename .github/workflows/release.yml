@@ -32,26 +32,26 @@ jobs:
           - os: ubuntu-latest
             os_name: Linux
             target: x86_64-unknown-linux-gnu
-            bin: log-agg
-            name: log-agg-Linux-x86_64.tar.gz
+            bin: log_aggregator
+            name: log-aggregator-Linux-x86_64.tar.gz
 
           - os: windows-latest
             os_name: Windows
             target: x86_64-pc-windows-msvc
-            bin: log-agg.exe
-            name: log-agg-Windows-x86_64.zip
+            bin: log_aggregator.exe
+            name: log-aggregator-Windows-x86_64.zip
 
           - os: macos-latest
             os_name: macOS-x86_64
             target: x86_64-apple-darwin
-            bin: log-agg
-            name: log-agg-Darwin-x86_64.tar.gz
+            bin: log_aggregator
+            name: log-aggregator-Darwin-x86_64.tar.gz
 
           - os: macos-latest
             os_name: macOS-aarch64
             target: aarch64-apple-darwin
-            bin: log-agg
-            name: log-agg-Darwin-aarch64.tar.gz
+            bin: log_aggregator
+            name: log-aggregator-Darwin-aarch64.tar.gz
 
     steps:
       - name: Checkout
@@ -69,11 +69,13 @@ jobs:
         if: matrix.platform.os != 'windows-latest'
         run: |
           cd target/${{ matrix.platform.target }}/release
+          chmod +x ${{ matrix.platform.bin }}
           tar czvf ../../../${{ matrix.platform.name }} ${{ matrix.platform.bin }}
           cd -
 
       - name: Package as archive (Windows)
         if: matrix.platform.os == 'windows-latest'
+        shell: pwsh
         run: |
           cd target/${{ matrix.platform.target }}/release
           7z a ../../../${{ matrix.platform.name }} ${{ matrix.platform.bin }}

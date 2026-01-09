@@ -76,8 +76,6 @@ fn main() {
         let top_errors = Arc::clone(&top_errors);
 
         let handle = thread::spawn(move || {
-            let path = PathBuf::from("logs").join(path);
-
             if !path.exists() {
                 eprintln!("Error: File does not exist {:?}", path);
                 return;
@@ -177,17 +175,10 @@ fn main() {
     println!("\nTop errors:");
     {
         let top_errors = top_errors.lock().unwrap();
-        let mut sorted_errors: Vec<_> = top_errors
-            .iter()
-            .filter(|v| {
-                let (_, v) = *v;
-                *v > 1
-            })
-            .map(|v| v)
-            .collect();
+        let mut sorted_errors: Vec<_> = top_errors.iter().map(|v| v).collect();
         sorted_errors.sort_unstable_by(|a, b| b.1.cmp(a.1));
 
-        for (k, v) in sorted_errors {
+        for (k, v) in sorted_errors.iter().take(5) {
             println!("- \"{k}\" ({v} occurences)");
         }
     }
